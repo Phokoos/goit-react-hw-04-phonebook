@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { Component, useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 
 import css from './App.module.css';
@@ -9,17 +9,19 @@ import Filter from './Filter/filter';
 
 const LOCAL_CONTACTS_LIST = 'contactsList';
 
-class App extends Component {
-  state = {
-    contacts: [],
-    filter: '',
-  };
+const App = () => {
+  const [contacts, setContacts] = useState([]);
+  const [filter, setFilter] = useState('');
+  const [name, setName] = useState('');
+  const [number, setNumber] = useState('');
 
-  formSubmit = event => {
+  const formSubmit = event => {
     event.preventDefault();
 
-    const { contacts } = this.state;
     const { name, number } = event.target;
+
+    console.log('name ' + name.value);
+    console.log('number ' + number.value);
 
     if (
       contacts
@@ -29,80 +31,78 @@ class App extends Component {
       return alert(`Name ${name.value} is already here`);
     }
 
-    this.setState({
-      contacts: [
-        ...contacts,
-        {
-          id: nanoid(),
-          name: name.value,
-          number: number.value,
-        },
-      ],
-    });
+    setName(name.value);
+    setNumber(number.value);
 
     event.currentTarget.reset();
   };
 
-  componentDidMount() {
+  useEffect(() => {
+    if (name === '') {
+      return;
+    }
+    setContacts(state => {
+      return [
+        ...state,
+        {
+          id: nanoid(),
+          name: name,
+          number: number,
+        },
+      ];
+    });
+  }, [name, number]);
+
+  const handleInputChange = event => {
+    setFilter(event.target.value);
+  };
+
+  const removeContacts = event => {
+    const { id } = event.currentTarget.parentElement;
+
+    setContacts(state => {
+      return state.filter(contact => contact.id !== id);
+    });
+  };
+
+  useEffect(() => {
     let localData = [];
     try {
       localData = JSON.parse(localStorage.getItem(LOCAL_CONTACTS_LIST));
     } catch (error) {
       console.log(error);
     }
-
     if (localData) {
       if (localData !== []) {
-        this.setState({
-          contacts: [...localData.contacts],
-        });
+        setContacts([...localData.contacts]);
       }
     }
-  }
+  }, []);
 
-  componentDidUpdate(prevProps, prevState) {
-    const { contacts } = this.state;
-
-    if (prevState.contacts.length !== contacts.length)
+  useEffect(() => {
+    if (contacts.length !== 0) {
       localStorage.setItem(LOCAL_CONTACTS_LIST, JSON.stringify({ contacts }));
-  }
+    }
+  }, [contacts]);
 
-  handleInputChange = event => {
-    const { name, value } = event.target;
-    this.setState({
-      [name]: value,
-    });
-  };
+  return (
+    <div className={css.phonebook}>
+      <h1 className={css.phonebook__title}>Phonebook</h1>
+      <ContactForm state={{ contacts, filter }} formSubmit={formSubmit} />
 
-  removeContacts = event => {
-    const { contacts } = this.state;
-    const { id } = event.currentTarget.parentElement;
-
-    this.setState({
-      contacts: contacts.filter(contact => contact.id !== id),
-    });
-  };
-
-  render() {
-    return (
-      <div className={css.phonebook}>
-        <h1 className={css.phonebook__title}>Phonebook</h1>
-        <ContactForm state={this.state} formSubmit={this.formSubmit} />
-
-        <h2 className={css.phonebook__contactsTitle}>Contacts</h2>
-        <Filter
-          contacts={this.state.contacts}
-          filter={this.state.filter}
-          handleInputChange={this.handleInputChange}
-        />
-        <ContactList
-          contacts={this.state.contacts}
-          filter={this.state.filter}
-          removeContacts={this.removeContacts}
-        />
-      </div>
-    );
-  }
-}
+      <h2 className={css.phonebook__contactsTitle}>Contacts</h2>
+      <Filter
+        contacts={contacts}
+        filter={filter}
+        handleInputChange={handleInputChange}
+      />
+      <ContactList
+        contacts={contacts}
+        filter={filter}
+        removeContacts={removeContacts}
+      />
+    </div>
+  );
+};
 
 export default App;
