@@ -20,9 +20,6 @@ const App = () => {
 
     const { name, number } = event.target;
 
-    console.log('name ' + name.value);
-    console.log('number ' + number.value);
-
     if (
       contacts
         .map(contact => contact.name.toLowerCase())
